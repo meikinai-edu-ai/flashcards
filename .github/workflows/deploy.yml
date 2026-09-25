@@ -1,0 +1,56 @@
+name: Публикация сайта
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Скачать файлы репозитория
+        uses: actions/checkout@v4
+
+      - name: Собрать список тем
+        run: |
+          mkdir -p cards _site/cards
+          python3 - <<'PY'
+          import json, os, re, shutil
+          def key(name):
+              return [int(p) if p.isdigit() else p.lower() for p in re.split(r'(\d+)', name)]
+          files = sorted(
+              (f for f in os.listdir('cards')
+               if f.lower().endswith('.xlsx') and not f.startswith('~$')),
+              key=key)
+          for f in files:
+              shutil.copy(os.path.join('cards', f), os.path.join('_site', 'cards', f))
+          with open('_site/cards/index.json', 'w', encoding='utf-8') as fh:
+              json.dump({'files': files}, fh, ensure_ascii=False)
+          print('Файлы с карточками:', files)
+          PY
+          cp index.html _site/
+
+      - name: Настроить GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Упаковать сайт
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Опубликовать
+        id: deployment
+        uses: actions/deploy-pages@v4
