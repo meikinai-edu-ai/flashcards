@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F3F5F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121614" media="(prefers-color-scheme: dark)">
+<title>Карточки для повторения: анализ и визуализация данных</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2' y='3' width='20' height='18' rx='3' fill='%231E6B45'/%3E%3Cpath d='M2 9h20M2 15h20M9 3v18' stroke='%23fff' stroke-width='1.6'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F3F5F2;
+  --surface: #FFFFFF;
+  --surface-2: #EDF1EE;
+  --ink: #1B2420;
+  --muted: #56615B;
+  --faint: #8A948E;
+  --line: #D5DBD6;
+  --line-2: #E5EAE6;
+  --grid: #E8ECE9;
+  --accent: #1E6B45;
+  --accent-hover: #185A39;
+  --accent-ink: #1E6B45;
+  --on-accent: #FFFFFF;
+  --accent-soft: #E3F0E8;
+  --accent-soft-ink: #185A39;
+  --warn-border: #D4A106;
+  --warn-bg: #FFF8DB;
+  --warn-ink: #6E4A00;
+  --warn-soft: #FFF1C2;
+  --pbi: #F2C811;
+  --pbi-ink: #1B2420;
+  --err-soft: #FBE3DD;
+  --err-ink: #8A2B14;
+  --mark: #E3F0E8;
+  --sel: #F1F7F3;
+  --sans: 'Golos Text', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121614; --surface: #1B211E; --surface-2: #242B27; --ink: #E7ECE9; --muted: #A3AEA8; --faint: #7D8882;
+    --line: #333C37; --line-2: #2A322D; --grid: #242B27;
+    --accent: #2E7D53; --accent-hover: #35915F; --accent-ink: #7FD1A4; --on-accent: #FFFFFF;
+    --accent-soft: #1E3528; --accent-soft-ink: #A6E2C0;
+    --warn-border: #B8900A; --warn-bg: #2E2710; --warn-ink: #F2D27A; --warn-soft: #3A3113;
+    --err-soft: #3D221C; --err-ink: #F2B0A0; --mark: #1E3528; --sel: #1B2A22;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121614; --surface: #1B211E; --surface-2: #242B27; --ink: #E7ECE9; --muted: #A3AEA8; --faint: #7D8882;
+  --line: #333C37; --line-2: #2A322D; --grid: #242B27;
+  --accent: #2E7D53; --accent-hover: #35915F; --accent-ink: #7FD1A4; --on-accent: #FFFFFF;
+  --accent-soft: #1E3528; --accent-soft-ink: #A6E2C0;
+  --warn-border: #B8900A; --warn-bg: #2E2710; --warn-ink: #F2D27A; --warn-soft: #3A3113;
+  --err-soft: #3D221C; --err-ink: #F2B0A0; --mark: #1E3528; --sel: #1B2A22;
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.45; -webkit-tap-highlight-color: transparent; }
+a { color: var(--accent-ink); }
+button { font-family: inherit; font-size: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+[hidden] { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+.grow { flex: 1 1 auto; min-width: 0; }
+
+.page { width: 100%; max-width: 680px; margin: 0 auto; padding: 14px 16px 32px; display: flex; flex-direction: column; gap: 20px; }
+
+.brand { display: flex; align-items: center; gap: 8px; min-height: 36px; font-weight: 600; font-size: 15px; }
+.brand svg { flex-shrink: 0; }
+
+.hero { display: flex; flex-direction: column; gap: 6px; padding: 0 4px; }
+.hero h1 { margin: 0; font-size: clamp(27px, 7vw, 40px); line-height: 1.1; font-weight: 700; letter-spacing: -0.015em; }
+.hero .hero-sub { margin: 0; color: var(--muted); font-size: 16px; }
+.progress-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.progress-row span { font-size: 14px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.track { flex: 1 1 auto; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.track.sm { flex: 0 0 auto; width: 80px; height: 4px; border-radius: 2px; }
+.fill { height: 100%; background: var(--accent); border-radius: inherit; transition: width .3s ease; }
+
+.search { position: relative; display: flex; align-items: center; }
+.search > svg { position: absolute; left: 14px; pointer-events: none; color: var(--muted); }
+.search input { width: 100%; min-height: 50px; padding: 0 46px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font-family: inherit; font-size: 16px; -webkit-appearance: none; appearance: none; }
+.search input::placeholder { color: var(--faint); }
+.search input::-webkit-search-cancel-button { display: none; }
+.search-clear { position: absolute; right: 3px; width: 44px; height: 44px; border: 0; background: transparent; color: var(--muted); display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 8px; }
+
+.section { display: flex; flex-direction: column; gap: 10px; }
+.section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 4px; }
+.section-title { margin: 0; font-size: 17px; font-weight: 600; }
+.hint { margin: 0; padding: 0 4px; font-size: 14px; line-height: 1.45; color: var(--muted); }
+
+.list { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.list > * + * { border-top: 1px solid var(--line-2); }
+
+.continue { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 12px; background: var(--accent); color: var(--on-accent); text-decoration: none; }
+.continue:hover { background: var(--accent-hover); }
+.continue .label { font-size: 13px; opacity: .85; }
+.continue .title { font-size: 17px; font-weight: 600; }
+.continue .meta { font-size: 14px; opacity: .85; }
+.continue .go { width: 44px; height: 44px; border-radius: 22px; background: #FFFFFF; color: #1E6B45; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+details.module { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+details.module > summary { list-style: none; display: flex; align-items: center; gap: 12px; padding: 14px 16px; min-height: 64px; cursor: pointer; }
+details.module > summary::-webkit-details-marker { display: none; }
+details.module > summary .chev { transition: transform .2s; color: var(--muted); flex-shrink: 0; }
+details.module[open] > summary .chev { transform: rotate(180deg); }
+.module-head { flex: 1 1 auto; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.module-name { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 600; }
+.module-progress { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.module .topics { border-top: 1px solid var(--line-2); }
+.module .topics > * + * { border-top: 1px solid var(--line-2); }
+
+.tag { font-size: 12px; font-weight: 600; padding: 2px 7px; border-radius: 4px; line-height: 1.4; }
+.tag-excel { background: var(--accent); color: var(--on-accent); }
+.tag-pbi { background: var(--pbi); color: var(--pbi-ink); }
+
+.row-link { display: flex; align-items: center; gap: 10px; padding: 10px 16px; min-height: 52px; text-decoration: none; color: var(--ink); }
+.row-link:hover { background: var(--surface-2); }
+.row-link .chev-r { color: var(--faint); flex-shrink: 0; }
+.row-link .count { font-size: 14px; color: var(--muted); white-space: nowrap; }
+.result .label { font-size: 16px; font-weight: 500; overflow-wrap: anywhere; }
+.result .where { font-size: 13px; color: var(--muted); }
+.kind { font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 4px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+
+.notice { padding: 12px 14px; border-radius: 10px; background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-ink); font-size: 14px; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 0 20px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 16px; font-weight: 500; text-decoration: none; cursor: pointer; text-align: center; }
+.btn:hover { background: var(--surface-2); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn-repeat { background: var(--warn-bg); border: 2px solid var(--warn-border); color: var(--warn-ink); font-weight: 600; }
+.btn-repeat:hover { background: var(--warn-soft); }
+.btn-block { width: 100%; }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+.text-btn { min-height: 44px; padding: 0 6px; border: 0; background: transparent; color: var(--accent-ink); font-size: 15px; font-weight: 500; cursor: pointer; border-radius: 8px; }
+.text-btn.danger { color: var(--err-ink); align-self: flex-start; }
+
+.back { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding-right: 8px; text-decoration: none; font-size: 15px; font-weight: 500; color: var(--accent-ink); }
+.topic-head { display: flex; flex-direction: column; gap: 8px; padding: 0 4px; }
+.topic-head .meta { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+.topic-head h1 { margin: 0; font-size: clamp(26px, 6.5vw, 36px); line-height: 1.12; font-weight: 700; letter-spacing: -0.015em; }
+
+.subt { display: flex; align-items: center; gap: 14px; padding: 12px 16px; min-height: 60px; cursor: pointer; }
+.subt:has(input:checked) { background: var(--sel); }
+.subt input, .setting input[type="checkbox"] { width: 22px; height: 22px; margin: 0; accent-color: var(--accent); flex-shrink: 0; cursor: pointer; }
+.sub-name { font-size: 16px; font-weight: 500; }
+.mini { display: flex; align-items: center; gap: 8px; margin-top: 5px; font-size: 13px; color: var(--muted); }
+.setting { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 16px; min-height: 52px; cursor: pointer; }
+.setting.stack { flex-direction: column; align-items: stretch; gap: 8px; padding: 12px 16px; cursor: default; }
+.seg { display: flex; padding: 3px; gap: 2px; border-radius: 9px; background: var(--surface-2); }
+.seg button { flex: 1 1 0; min-height: 40px; border: 0; border-radius: 7px; background: transparent; font-size: 15px; font-weight: 500; cursor: pointer; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
+
+.sticky-cta { position: sticky; bottom: 0; margin: 0 -16px -32px; padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--bg); border-top: 1px solid var(--line-2); }
+
+/* Study */
+.page--study { min-height: 100dvh; padding-bottom: 20px; gap: 12px; }
+.study-top { display: flex; align-items: center; gap: 4px; }
+.icon-btn { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 8px; color: var(--ink); flex-shrink: 0; }
+.study-title { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; text-align: center; min-width: 0; }
+.study-title .t { font-size: 16px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.study-title .c { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.chips { display: flex; justify-content: center; gap: 8px; }
+.chip { font-size: 13px; font-weight: 500; padding: 4px 9px; border-radius: 5px; font-variant-numeric: tabular-nums; }
+.chip-known { background: var(--accent-soft); color: var(--accent-soft-ink); }
+.chip-repeat { background: var(--warn-soft); color: var(--warn-ink); }
+
+.card-stage { flex: 1 1 auto; display: flex; min-height: 360px; }
+.card { flex: 1 1 auto; width: 100%; padding: 0; border: 0; background: transparent; cursor: pointer; perspective: 1600px; text-align: left; color: inherit; }
+.card:focus-visible { outline-offset: 4px; border-radius: 14px; }
+.card-inner { position: relative; width: 100%; height: 100%; min-height: 360px; transform-style: preserve-3d; transition: transform .5s ease; }
+.card.flipped .card-inner { transform: rotateY(180deg); }
+.card.no-anim .card-inner { transition: none; }
+.face { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 14px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 12px; background-color: var(--surface);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 72px 26px;
+  -webkit-backface-visibility: hidden; backface-visibility: hidden; overflow: hidden; }
+.face-back { transform: rotateY(180deg); background-image: none; }
+.face-body { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center; gap: 14px; overflow-y: auto; min-height: 0; }
+.face-foot { font-size: 13px; color: var(--muted); text-align: center; }
+.on-grid { background: var(--surface); box-shadow: 0 0 0 6px var(--surface); border-radius: 2px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+
+.type { align-self: flex-start; font-size: 13px; font-weight: 600; padding: 4px 9px; border-radius: 5px; }
+.type-term { background: var(--accent-soft); color: var(--accent-soft-ink); }
+.type-fn { background: var(--accent); color: var(--on-accent); }
+.type-tool { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+.type-err { background: var(--err-soft); color: var(--err-ink); }
+.type-pbi { background: var(--pbi); color: var(--pbi-ink); }
+
+.question { margin: 0; font-size: 23px; line-height: 1.45; font-weight: 500; }
+.question.long { font-size: 20px; }
+.question.xlong { font-size: 18px; }
+.blank { display: inline-block; min-width: 4.2em; height: 1em; margin: 0 .12em; border-bottom: 3px solid var(--accent); vertical-align: -0.12em; }
+
+.answer-big { font-size: 30px; line-height: 1.2; font-weight: 600; overflow-wrap: anywhere; }
+.answer-big.code { font-family: var(--mono); font-weight: 500; font-size: 28px; }
+.fx { align-self: flex-start; display: inline-flex; align-items: stretch; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); overflow: hidden; max-width: 100%; }
+.fx-label { display: flex; align-items: center; padding: 0 12px; font-family: Georgia, 'Times New Roman', serif; font-style: italic; font-size: 18px; color: var(--muted); background: var(--surface-2); border-right: 1px solid var(--line); }
+.fx-value { padding: 8px 16px; font-family: var(--mono); font-size: 26px; font-weight: 500; overflow-wrap: anywhere; }
+.front-answer { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; flex: 1 1 auto; }
+.front-answer .fx { align-self: center; }
+.filled { margin: 0; font-size: 18px; line-height: 1.5; }
+.filled mark { background: var(--mark); color: var(--accent-soft-ink); font-weight: 600; padding: 0 .2em; border-radius: 3px; }
+.code-block { display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
+.code-label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.code-block code { font-family: var(--mono); font-size: 14px; line-height: 1.5; padding: 8px 10px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); overflow-wrap: anywhere; white-space: pre-wrap; max-width: 100%; }
+
+.card-hint { margin: 0; text-align: center; font-size: 14px; color: var(--muted); min-height: 20px; }
+.rate { display: flex; gap: 10px; }
+.rate .btn { flex: 1 1 0; min-height: 56px; font-size: 17px; }
+.keys { display: none; text-align: center; font-size: 13px; color: var(--faint); margin: 0; }
+@media (hover: hover) and (pointer: fine) { .keys { display: block; } }
+
+/* Result */
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
+.tile .n { font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tile .n.known { color: var(--accent-ink); }
+.tile .n.repeat { color: var(--warn-ink); }
+.item { display: flex; flex-direction: column; gap: 3px; padding: 12px 16px; }
+.item .a { font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+.item .a.code { font-family: var(--mono); font-weight: 500; }
+.item .q { font-size: 14px; color: var(--muted); }
+.actions { display: flex; flex-direction: column; gap: 10px; }
+
+/* States */
+.state { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; text-align: center; padding: 40px 16px 80px; min-height: 60vh; }
+.state h2 { margin: 0; font-size: 22px; font-weight: 600; }
+.state p { margin: 0; color: var(--muted); max-width: 34ch; line-height: 1.5; }
+.spinner { width: 28px; height: 28px; border: 3px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.tools { display: flex; flex-direction: column; gap: 10px; }
+.tool-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.tool-buttons .btn { min-height: 48px; font-size: 15px; padding: 0 12px; }
+
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 12px 16px; border-radius: 10px; font-size: 15px; max-width: calc(100% - 32px); z-index: 10; }
+
+@media (min-width: 720px) {
+  .page { padding: 24px 24px 48px; gap: 24px; }
+  .question { font-size: 27px; }
+  .question.long { font-size: 23px; }
+  .question.xlong { font-size: 20px; }
+  .face { padding: 26px 32px; }
+  .card-stage, .card-inner { min-height: 420px; }
+  .sticky-cta { margin: 0; padding: 16px 0 0; border-top: 0; position: static; }
+  .page--study { min-height: auto; }
+  .card-stage { flex: 0 0 auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-inner, .fill, details.module > summary .chev { transition: none; }
+}
+</style>
+</head>
+<body>
+<div id="app" aria-live="polite"></div>
+<div id="toast" class="toast" role="status" hidden></div>
+<input type="file" id="import-file" accept=".json,application/json" hidden>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script>
+/* ===== Настройки сайта ===== */
+const CONFIG = {
+  title: 'Анализ и визуализация данных',
+  subtitle: 'Excel и Power BI',
+  cardsDir: 'cards/'
+};
+
+/* ===== Утилиты ===== */
+const app = document.getElementById('app');
+const STORE_KEY = 'flashcards:' + location.pathname;
+const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ESC[c]);
+const norm = s => String(s == null ? '' : s).trim().toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ');
+function hash(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
+function plural(n, one, few, many) { const a = n % 10, b = n % 100; if (a === 1 && b !== 11) return one; if (a >= 2 && a <= 4 && (b < 10 || b >= 20)) return few; return many; }
+const cardsWord = n => plural(n, 'карточка', 'карточки', 'карточек');
+const BLANK_RE = /_{3,}/;
+
+const ICON = {
+  logo: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent-ink)" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9H21M3 14.5H21M9 4V20"/></svg>',
+  search: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>',
+  close: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  left: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>',
+  right: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>',
+  go: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>',
+  down: '<svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>',
+  empty: '<svg width="120" height="96" viewBox="0 0 120 96" fill="none" aria-hidden="true"><rect x="24" y="8" width="80" height="56" rx="6" fill="var(--surface)" stroke="var(--line)" stroke-width="1.5" transform="rotate(-6 64 36)"/><rect x="16" y="24" width="84" height="60" rx="6" fill="var(--surface)"/><path d="M16 44H100M16 64H100M44 24V84M72 24V84" stroke="var(--line-2)" stroke-width="1.5"/><rect x="16" y="24" width="84" height="60" rx="6" stroke="var(--faint)" stroke-width="1.5"/></svg>'
+};
+
+/* ===== Прогресс (хранится в браузере) ===== */
+const DEFAULT_SETTINGS = { shuffle: false, onlyNew: false, front: 'q' };
+function loadStore() {
+  try {
+    const s = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+    return { cards: s.cards || {}, last: s.last || null, settings: Object.assign({}, DEFAULT_SETTINGS, s.settings || {}) };
+  } catch (e) { return { cards: {}, last: null, settings: Object.assign({}, DEFAULT_SETTINGS) }; }
+}
+let store = loadStore();
+function saveStore() { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) { /* хранилище недоступно */ } }
+const isKnown = c => store.cards[c.id] === 'known';
+
+/* ===== Загрузка карточек ===== */
+const FIELDS = {
+  module: ['модуль'], topic: ['тема'], subtopic: ['подтема'], type: ['тип'],
+  question: ['предложение с пропуском', 'предложение', 'вопрос'], answer: ['ответ'],
+  syntax: ['синтаксис'], example: ['пример']
+};
+let DATA = null, LOAD_STATE = 'loading', LOAD_ERROR = '', FILE_ERRORS = [];
+
+const EXCEL_ERRORS = { 0: '#NULL!', 7: '#DIV/0!', 15: '#VALUE!', 23: '#REF!', 29: '#NAME?', 36: '#NUM!', 42: '#N/A', 43: '#GETTING_DATA' };
+function rowsFromWorkbook(wb) {
+  const name = wb.SheetNames.find(n => norm(n) === 'карточки') || wb.SheetNames[0];
+  const ws = wb.Sheets[name];
+  // Ответы вроде «#NAME?» Excel хранит как ошибку, а не как текст: превращаем их обратно в текст
+  for (const ref in ws) {
+    const cell = ws[ref];
+    if (ref[0] !== '!' && cell && cell.t === 'e') { const txt = cell.w || EXCEL_ERRORS[cell.v] || ''; cell.t = 's'; cell.v = txt; cell.w = txt; }
+  }
+  return XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false, blankrows: false });
+}
+
+function cardsFromRows(fileName, rows) {
+  if (!rows || !rows.length) return [];
+  const head = rows[0].map(norm);
+  const col = {};
+  for (const k in FIELDS) col[k] = head.findIndex(h => FIELDS[k].includes(h));
+  if (col.question < 0) col.question = head.findIndex(h => h.startsWith('предложение') || h.startsWith('вопрос'));
+  if (col.question < 0 || col.answer < 0) throw new Error('нет колонок «Предложение с пропуском» и «Ответ»');
+  const cur = { module: '', topic: '', subtopic: '' };
+  const out = [];
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r];
+    const get = k => (col[k] >= 0 ? String(row[col[k]] == null ? '' : row[col[k]]).trim() : '');
+    ['module', 'topic', 'subtopic'].forEach(k => { const v = get(k); if (v) cur[k] = v; });
+    const question = get('question'), answer = get('answer');
+    if (!question || !answer) continue;
+    out.push({
+      module: cur.module || 'Модуль',
+      topic: cur.topic || fileName.replace(/\.xlsx$/i, ''),
+      subtopic: cur.subtopic || 'Общее',
+      type: get('type') || 'Термин',
+      question, answer, syntax: get('syntax'), example: get('example')
+    });
+  }
+  return out;
+}
+
+function assemble(cards) {
+  const modules = new Map(), seen = new Set();
+  for (const c of cards) {
+    let id = hash(c.module + '|' + c.topic + '|' + c.question);
+    while (seen.has(id)) id = hash(id + '+');
+    seen.add(id); c.id = id;
+    if (!modules.has(c.module)) modules.set(c.module, { name: c.module, topics: new Map() });
+    const m = modules.get(c.module);
+    const key = hash(c.module + '|' + c.topic);
+    c.topicKey = key;
+    if (!m.topics.has(key)) m.topics.set(key, { key, name: c.topic, module: c.module, subs: new Map() });
+    const t = m.topics.get(key);
+    if (!t.subs.has(c.subtopic)) t.subs.set(c.subtopic, { name: c.subtopic, cards: [] });
+    t.subs.get(c.subtopic).cards.push(c);
+  }
+  const topicsByKey = {};
+  const list = [...modules.values()]
+    .sort((a, b) => a.name.localeCompare(b.name, 'ru', { numeric: true }))
+    .map(m => {
+      const topics = [...m.topics.values()].map(t => {
+        const subs = [...t.subs.values()];
+        return { key: t.key, name: t.name, module: t.module, subs, cards: subs.flatMap(s => s.cards) };
+      });
+      const text = m.name + ' ' + topics.map(t => t.name).join(' ');
+      const tag = /power\s*bi|dax|power\s*query/i.test(text) ? 'Power BI' : (/excel/i.test(text) ? 'Excel' : '');
+      topics.forEach(t => { t.tag = tag; topicsByKey[t.key] = t; });
+      return { name: m.name, tag, topics, cards: topics.flatMap(t => t.cards) };
+    });
+  return { modules: list, topicsByKey, cards: list.flatMap(m => m.cards) };
+}
+
+async function loadData() {
+  try {
+    let entries;
+    if (window.EMBEDDED_CARDS) {
+      entries = window.EMBEDDED_CARDS;
+    } else {
+      if (!window.XLSX) throw new Error('lib');
+      const res = await fetch(CONFIG.cardsDir + 'index.json', { cache: 'no-cache' });
+      if (!res.ok) throw new Error('index');
+      const index = await res.json();
+      const files = Array.isArray(index.files) ? index.files : [];
+      entries = await Promise.all(files.map(async file => {
+        try {
+          const r = await fetch(CONFIG.cardsDir + encodeURIComponent(file), { cache: 'no-cache' });
+          if (!r.ok) throw new Error(String(r.status));
+          const wb = XLSX.read(await r.arrayBuffer(), { type: 'array' });
+          return { file, rows: rowsFromWorkbook(wb) };
+        } catch (e) { FILE_ERRORS.push(file); return null; }
+      }));
+    }
+    const all = [];
+    for (const e of entries) {
+      if (!e) continue;
+      try { all.push(...cardsFromRows(e.file, e.rows)); } catch (err) { FILE_ERRORS.push(e.file); }
+    }
+    DATA = assemble(all);
+    LOAD_STATE = 'ready';
+  } catch (e) {
+    LOAD_STATE = 'error';
+    LOAD_ERROR = e && e.message;
+  }
+  route();
+}
+
+/* ===== Общие куски разметки ===== */
+const brand = () => `<div class="brand">${ICON.logo}<span>Карточки для повторения</span></div>`;
+function bar(done, total, size) {
+  const pct = total ? Math.round(done / total * 100) : 0;
+  return `<div class="track${size ? ' ' + size : ''}" role="progressbar" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${done}" aria-label="Выучено ${done} из ${total}"><div class="fill" style="width:${pct}%"></div></div>`;
+}
+const tagHtml = tag => tag ? `<span class="tag ${tag === 'Power BI' ? 'tag-pbi' : 'tag-excel'}">${esc(tag)}</span>` : '';
+function looksLikeCode(text) { return /^[=#&$]|^[A-Z][A-Z0-9_.]{1,}$|^Ctrl\+|\(\)$/.test(String(text).trim()); }
+function typeClass(card, topic) {
+  const t = norm(card.type);
+  if (topic && topic.tag === 'Power BI') return 'type-pbi';
+  if (t.startsWith('функц')) return 'type-fn';
+  if (t.startsWith('ошиб')) return 'type-err';
+  if (t.startsWith('при')) return 'type-tool';
+  return 'type-term';
+}
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => { el.hidden = true; }, 2600);
+}
+
+/* ===== Маршруты ===== */
+let session = null;
+const topicState = {};
+function go(hash) { if (location.hash === hash) route(); else location.hash = hash; }
+
+function route() {
+  const parts = (location.hash.replace(/^#\/?/, '') || '').split('/').filter(Boolean).map(decodeURIComponent);
+  document.body.dataset.screen = parts[0] || 'home';
+  delete app.dataset.topic;
+  if (LOAD_STATE === 'loading') return renderLoading();
+  if (LOAD_STATE === 'error') return renderError();
+  if (!DATA.cards.length) return renderEmpty();
+  if (parts[0] === 'topic' && DATA.topicsByKey[parts[1]]) return renderTopic(DATA.topicsByKey[parts[1]], parts[2]);
+  if (parts[0] === 'study' && session && !session.finished) return renderStudy();
+  if (parts[0] === 'result' && session && session.finished) return renderResult();
+  if (parts.length) history.replaceState(null, '', location.pathname + location.search + '#/');
+  renderHome();
+}
+window.addEventListener('hashchange', () => { route(); window.scrollTo(0, 0); });
+
+/* ===== Состояния загрузки ===== */
+function renderLoading() {
+  app.innerHTML = `<div class="page">${brand()}<div class="state"><div class="spinner" aria-hidden="true"></div><p>Загружаем карточки…</p></div></div>`;
+}
+function renderError() {
+  let why = 'Проверьте подключение к интернету и обновите страницу.';
+  if (location.protocol === 'file:') why = 'Сайт нужно открывать по ссылке GitHub Pages, а не как файл на компьютере.';
+  else if (LOAD_ERROR === 'lib') why = 'Не загрузилась библиотека для чтения Excel-файлов. Проверьте интернет и обновите страницу.';
+  app.innerHTML = `<div class="page">${brand()}<div class="state"><h2>Не удалось загрузить карточки</h2><p>${esc(why)}</p><button class="btn btn-primary" data-action="reload">Обновить страницу</button></div></div>`;
+}
+function renderEmpty() {
+  app.innerHTML = `<div class="page">${brand()}
+    <div class="hero"><h1>${esc(CONFIG.title)}</h1></div>
+    <div class="state">${ICON.empty}<h2>Карточки скоро появятся</h2><p>Темы добавляются постепенно, по ходу курса. Загляните сюда после следующего занятия.</p></div></div>`;
+}
+
+/* ===== Главная ===== */
+let openModule = null, searchQuery = '';
+function renderHome() {
+  const total = DATA.cards.length;
+  const learned = DATA.cards.filter(isKnown).length;
+  const lastTopic = store.last && DATA.topicsByKey[store.last.topic];
+  if (openModule === null) openModule = lastTopic ? lastTopic.module : DATA.modules[0].name;
+
+  let cont = '';
+  if (lastTopic) {
+    const left = lastTopic.cards.filter(c => !isKnown(c)).length;
+    const meta = left ? `${esc(lastTopic.module)}, осталось ${left} ${cardsWord(left)}` : `${esc(lastTopic.module)}, всё выучено`;
+    cont = `<a class="continue" href="#/topic/${lastTopic.key}"><div class="grow"><div class="label">Продолжить</div><div class="title">${esc(lastTopic.name)}</div><div class="meta">${meta}</div></div><span class="go">${ICON.go}</span></a>`;
+  }
+  const notice = FILE_ERRORS.length ? `<div class="notice">Не удалось прочитать ${FILE_ERRORS.length === 1 ? 'файл' : 'файлы'}: ${FILE_ERRORS.map(esc).join(', ')}. Остальные темы доступны.</div>` : '';
+
+  const modules = DATA.modules.map(m => {
+    const ml = m.cards.filter(isKnown).length;
+    const topics = m.topics.map(t => `<a class="row-link" href="#/topic/${t.key}"><span class="grow">${esc(t.name)}</span><span class="count">${t.cards.length} ${cardsWord(t.cards.length)}</span><span class="chev-r">${ICON.right}</span></a>`).join('');
+    return `<details class="module" data-module="${esc(m.name)}"${m.name === openModule ? ' open' : ''}>
+      <summary><div class="module-head"><div class="module-name"><span>${esc(m.name)}</span>${tagHtml(m.tag)}</div>
+      <div class="module-progress">${bar(ml, m.cards.length, 'sm')}<span>${ml ? `${ml} из ${m.cards.length}` : 'Ещё не начат'}</span></div></div>${ICON.down}</summary>
+      <div class="topics">${topics}</div></details>`;
+  }).join('');
+
+  app.innerHTML = `<div class="page">
+    ${brand()}
+    <header class="hero"><h1>${esc(CONFIG.title)}</h1>${CONFIG.subtitle ? `<p class="hero-sub">${esc(CONFIG.subtitle)}</p>` : ''}
+      <div class="progress-row">${bar(learned, total)}<span>Выучено ${learned} из ${total}</span></div></header>
+    <div class="search">${ICON.search}<label for="q" class="sr-only">Поиск по темам и карточкам</label>
+      <input id="q" type="search" placeholder="Найти тему, термин или функцию" autocomplete="off" enterkeyhint="search" value="${esc(searchQuery)}">
+      <button class="search-clear" data-action="clear-search" aria-label="Очистить поиск" hidden>${ICON.close}</button></div>
+    <div id="results" class="section" hidden></div>
+    <div id="home-main" class="section" style="gap:20px">
+      ${cont}${notice}
+      <section class="section"><h2 class="section-title" style="padding:0 4px">Модули</h2>${modules}
+        <p class="hint">Новые темы появляются по мере того, как преподаватель их добавляет.</p></section>
+      <section class="tools"><h2 class="section-title" style="padding:0 4px">Мой прогресс</h2>
+        <p class="hint">Прогресс хранится только в этом браузере. Чтобы перенести его на другое устройство, сохраните его в файл и загрузите там.</p>
+        <div class="tool-buttons"><button class="btn" data-action="export">Сохранить в файл</button><button class="btn" data-action="import">Загрузить из файла</button></div>
+        <button class="text-btn danger" data-action="reset">Сбросить прогресс</button></section>
+    </div></div>`;
+
+  app.querySelectorAll('details.module').forEach(d => d.addEventListener('toggle', () => { if (d.open) openModule = d.dataset.module; }));
+  const input = document.getElementById('q');
+  input.addEventListener('input', () => { searchQuery = input.value; updateSearch(); });
+  if (searchQuery) updateSearch();
+}
+
+function searchAll(q) {
+  q = norm(q);
+  if (!q) return [];
+  const out = [];
+  for (const m of DATA.modules) for (const t of m.topics) {
+    if (norm(t.name).includes(q)) out.push({ kind: 'Тема', label: t.name, where: m.name, href: `#/topic/${t.key}` });
+    for (const s of t.subs) if (norm(s.name).includes(q)) out.push({ kind: 'Подтема', label: s.name, where: t.name, href: `#/topic/${t.key}/${encodeURIComponent(s.name)}` });
+    for (const c of t.cards) if (norm(c.answer).includes(q) || norm(c.question).includes(q))
+      out.push({ kind: c.type, label: c.answer, where: `${t.name}: ${c.subtopic}`, href: `#/topic/${t.key}/${encodeURIComponent(c.subtopic)}`, code: looksLikeCode(c.answer) });
+  }
+  const seen = new Set();
+  return out.filter(r => { const k = r.kind + '|' + r.label + '|' + r.where; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 40);
+}
+function updateSearch() {
+  const box = document.getElementById('results'), main = document.getElementById('home-main');
+  const clear = app.querySelector('.search-clear');
+  const q = searchQuery.trim();
+  clear.hidden = !q; box.hidden = !q; main.hidden = !!q;
+  if (!q) { box.innerHTML = ''; return; }
+  const res = searchAll(q);
+  box.innerHTML = res.length
+    ? `<p class="hint">Найдено: ${res.length}</p><div class="list">${res.map(r => `<a class="row-link result" href="${r.href}"><div class="grow"><div class="label"${r.code ? ' style="font-family:var(--mono)"' : ''}>${esc(r.label)}</div><div class="where">${esc(r.where)}</div></div><span class="kind">${esc(r.kind)}</span></a>`).join('')}</div>`
+    : `<div class="list"><p class="hint" style="padding:16px">Ничего не найдено. Попробуйте другое слово, например COUNTA или «данные».</p></div>`;
+}
+
+/* ===== Тема ===== */
+function renderTopic(t, preselect) {
+  const st = topicState[t.key] || (topicState[t.key] = { sel: new Set(t.subs.map(s => s.name)) });
+  if (preselect && t.subs.some(s => s.name === preselect)) {
+    st.sel = new Set([preselect]);
+    history.replaceState(null, '', location.pathname + location.search + '#/topic/' + t.key);
+  }
+  const learned = t.cards.filter(isKnown).length;
+  const S = store.settings;
+  const subs = t.subs.map((s, i) => {
+    const sl = s.cards.filter(isKnown).length, n = s.cards.length;
+    return `<label class="subt"><input type="checkbox" data-sub="${i}"${st.sel.has(s.name) ? ' checked' : ''}>
+      <div class="grow"><div class="sub-name">${esc(s.name)}</div><div class="mini">${bar(sl, n, 'sm')}<span>${sl} из ${n} ${plural(n, 'карточки', 'карточек', 'карточек')}</span></div></div></label>`;
+  }).join('');
+
+  app.innerHTML = `<div class="page">
+    <a class="back" href="#/">${ICON.left}Все темы</a>
+    <header class="topic-head"><div class="meta"><span>${esc(t.module)}</span>${tagHtml(t.tag)}</div>
+      <h1>${esc(t.name)}</h1><span class="muted">${t.cards.length} ${cardsWord(t.cards.length)}, выучено ${learned}</span></header>
+    <section class="section"><div class="section-head"><h2 class="section-title">Подтемы</h2>
+      <button class="text-btn" data-action="toggle-all" id="toggle-all"></button></div><div class="list">${subs}</div></section>
+    <section class="section"><h2 class="section-title" style="padding:0 4px">Настройки</h2><div class="list">
+      <label class="setting"><span>Вперемешку</span><input type="checkbox" data-setting="shuffle"${S.shuffle ? ' checked' : ''}></label>
+      <label class="setting"><span>Только невыученные</span><input type="checkbox" data-setting="onlyNew"${S.onlyNew ? ' checked' : ''}></label>
+      <div class="setting stack"><span id="front-label">Сначала показывать</span>
+        <div class="seg" role="group" aria-labelledby="front-label">
+          <button type="button" data-front="q" aria-pressed="${S.front === 'q'}">Предложение</button>
+          <button type="button" data-front="a" aria-pressed="${S.front === 'a'}">Ответ</button></div></div>
+    </div></section>
+    <div class="sticky-cta"><button class="btn btn-primary btn-block" data-action="start" id="start-btn"></button></div>
+  </div>`;
+  app.dataset.topic = t.key;
+  updateTopicControls(t);
+}
+function pickCards(t) {
+  const st = topicState[t.key];
+  let cards = t.subs.filter(s => st.sel.has(s.name)).flatMap(s => s.cards);
+  if (store.settings.onlyNew) cards = cards.filter(c => !isKnown(c));
+  return cards;
+}
+function updateTopicControls(t) {
+  const st = topicState[t.key];
+  const all = t.subs.every(s => st.sel.has(s.name));
+  document.getElementById('toggle-all').textContent = all ? 'Снять все' : 'Выбрать все';
+  const n = pickCards(t).length;
+  const btn = document.getElementById('start-btn');
+  btn.disabled = n === 0;
+  if (n) btn.textContent = `Начать: ${n} ${cardsWord(n)}`;
+  else btn.textContent = st.sel.size ? 'Все карточки уже выучены' : 'Отметьте хотя бы одну подтему';
+}
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function startSession(t, cards) {
+  let list = cards.slice();
+  if (store.settings.shuffle) shuffle(list);
+  const rank = c => (store.cards[c.id] === 'repeat' ? 0 : 1);
+  list = list.map((c, i) => [c, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0]);
+  session = { topicKey: t.key, cards: list, i: 0, flipped: false, known: [], repeat: [], front: store.settings.front, finished: false };
+  store.last = { topic: t.key };
+  saveStore();
+  go('#/study');
+}
+
+/* ===== Карточка ===== */
+function questionHtml(q) {
+  const parts = String(q).split(BLANK_RE);
+  if (parts.length < 2) return esc(q);
+  return esc(parts[0]) + '<span class="blank" aria-label="пропуск"></span>' + esc(parts.slice(1).join('___'));
+}
+function filledHtml(card) {
+  const q = String(card.question);
+  const m = q.match(BLANK_RE);
+  if (!m) return esc(q);
+  const before = q.slice(0, m.index), after = q.slice(m.index + m[0].length);
+  let ans = card.answer;
+  const prev = before.trim().slice(-1);
+  const atStart = before.trim() === '';
+  if (!atStart && !/[«→"+]/.test(prev) && !ans.includes('+') && /^[А-ЯЁA-Z][а-яёa-z]/.test(ans) && norm(card.type).startsWith('термин')) {
+    ans = ans.charAt(0).toLowerCase() + ans.slice(1);
+  }
+  return esc(before) + '<mark>' + esc(ans) + '</mark>' + esc(after);
+}
+function answerHtml(card) {
+  if (norm(card.type).startsWith('функц')) return `<div class="fx"><span class="fx-label">fx</span><span class="fx-value">${esc(card.answer)}</span></div>`;
+  return `<div class="answer-big${looksLikeCode(card.answer) ? ' code' : ''}">${esc(card.answer)}</div>`;
+}
+function extrasHtml(card) {
+  let h = '';
+  if (card.syntax) h += `<div class="code-block"><span class="code-label">Синтаксис</span><code>${esc(card.syntax)}</code></div>`;
+  if (card.example) h += `<div class="code-block"><span class="code-label">Пример</span><code>${esc(card.example)}</code></div>`;
+  return h;
+}
+function qSize(q) { const n = String(q).length; return n > 150 ? ' xlong' : n > 95 ? ' long' : ''; }
+
+function renderStudy() {
+  const t = DATA.topicsByKey[session.topicKey];
+  app.innerHTML = `<div class="page page--study">
+    <div class="study-top"><a class="icon-btn" href="#/topic/${t.key}" aria-label="Назад к теме">${ICON.left}</a>
+      <div class="study-title"><span class="t">${esc(t.name)}</span><span class="c" id="counter"></span></div>
+      <button class="text-btn" data-action="finish">Готово</button></div>
+    <div class="track" style="flex:0 0 auto"><div class="fill" id="study-fill"></div></div>
+    <div class="chips"><span class="chip chip-known">Знаю: <span id="known-n">0</span></span><span class="chip chip-repeat">Повторить: <span id="repeat-n">0</span></span></div>
+    <div class="card-stage"><button type="button" class="card" id="card" data-action="flip"><div class="card-inner">
+      <div class="face face-front" id="face-front"></div><div class="face face-back" id="face-back"></div></div></button></div>
+    <p class="card-hint" id="card-hint"></p>
+    <div class="rate"><button type="button" class="btn btn-repeat" data-action="repeat">Повторить</button><button type="button" class="btn btn-primary" data-action="known">Знаю</button></div>
+    <p class="keys">Пробел — перевернуть, ← — повторить, → — знаю</p>
+  </div>`;
+  showCard(false);
+}
+function showCard(animate) {
+  const t = DATA.topicsByKey[session.topicKey];
+  const c = session.cards[session.i];
+  const n = session.cards.length;
+  const cardEl = document.getElementById('card');
+  cardEl.classList.add('no-anim');
+  cardEl.classList.remove('flipped');
+  session.flipped = false;
+  const typeChip = `<span class="type ${typeClass(c, t)}">${esc(c.type)}</span>`;
+  const foot = `<span class="face-foot">${esc(c.subtopic)}</span>`;
+  const front = document.getElementById('face-front'), back = document.getElementById('face-back');
+  if (session.front === 'a') {
+    front.innerHTML = `${typeChip}<div class="front-answer">${answerHtml(c)}</div>${foot}`;
+    back.innerHTML = `${typeChip}<div class="face-body"><p class="filled">${filledHtml(c)}</p>${extrasHtml(c)}</div>`;
+  } else {
+    front.innerHTML = `${typeChip}<div class="face-body"><p class="question${qSize(c.question)}"><span class="on-grid">${questionHtml(c.question)}</span></p></div>${foot}`;
+    back.innerHTML = `${typeChip}<div class="face-body">${answerHtml(c)}<p class="filled">${filledHtml(c)}</p>${extrasHtml(c)}</div>`;
+  }
+  cardEl.setAttribute('aria-label', 'Карточка. Нажмите, чтобы перевернуть');
+  document.getElementById('counter').textContent = `Карточка ${session.i + 1} из ${n}`;
+  document.getElementById('study-fill').style.width = Math.round(session.i / n * 100) + '%';
+  document.getElementById('known-n').textContent = session.known.length;
+  document.getElementById('repeat-n').textContent = session.repeat.length;
+  document.getElementById('card-hint').textContent = 'Нажмите на карточку, чтобы увидеть ответ';
+  void cardEl.offsetWidth;
+  cardEl.classList.remove('no-anim');
+}
+function flip() {
+  const cardEl = document.getElementById('card');
+  session.flipped = !session.flipped;
+  cardEl.classList.toggle('flipped', session.flipped);
+  document.getElementById('card-hint').textContent = session.flipped ? 'Знали ответ? Оцените себя честно' : 'Нажмите на карточку, чтобы увидеть ответ';
+}
+function rate(status) {
+  const c = session.cards[session.i];
+  store.cards[c.id] = status;
+  saveStore();
+  (status === 'known' ? session.known : session.repeat).push(c);
+  if (session.i < session.cards.length - 1) { session.i++; showCard(); }
+  else finishSession();
+}
+function finishSession() {
+  if (!session.known.length && !session.repeat.length) { const k = session.topicKey; session = null; go('#/topic/' + k); return; }
+  session.finished = true;
+  go('#/result');
+}
+
+/* ===== Итог ===== */
+function renderResult() {
+  const t = DATA.topicsByKey[session.topicKey];
+  const k = session.known.length, r = session.repeat.length;
+  const items = session.repeat.map(c => `<div class="item"><span class="a${looksLikeCode(c.answer) ? ' code' : ''}">${esc(c.answer)}</span><span class="q">${esc(String(c.question).replace(BLANK_RE, '…'))}</span></div>`).join('');
+  app.innerHTML = `<div class="page">
+    <a class="back" href="#/">${ICON.left}Все темы</a>
+    <header class="topic-head"><h1>Повторение завершено</h1><span class="muted">${esc(t.name)}. ${r ? 'Карточки, которые нужно повторить, в следующий раз покажутся первыми.' : 'Отличный результат!'}</span></header>
+    <div class="tiles"><div class="tile"><span class="muted small">Знаю</span><span class="n known">${k}</span></div>
+      <div class="tile"><span class="muted small">Повторить</span><span class="n repeat">${r}</span></div></div>
+    ${r ? `<section class="section"><h2 class="section-title" style="padding:0 4px">Что повторить</h2><div class="list">${items}</div></section>` : ''}
+    <div class="actions">
+      ${r ? `<button class="btn btn-primary btn-block" data-action="again-repeat">Повторить ${r} ${plural(r, 'карточку', 'карточки', 'карточек')}</button>` : ''}
+      <a class="btn btn-block${r ? '' : ' btn-primary'}" href="#/topic/${t.key}">Выбрать другие подтемы</a>
+    </div></div>`;
+}
+
+/* ===== Прогресс: файл ===== */
+function exportProgress() {
+  const data = { app: 'flashcards', version: 1, site: location.origin + location.pathname, exported: new Date().toISOString(), cards: store.cards, last: store.last };
+  const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'progress-' + new Date().toISOString().slice(0, 10) + '.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast('Файл с прогрессом сохранён');
+}
+document.getElementById('import-file').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    if (!data || data.app !== 'flashcards' || typeof data.cards !== 'object') throw new Error('format');
+    store.cards = Object.assign({}, store.cards, data.cards);
+    if (!store.last && data.last) store.last = data.last;
+    saveStore();
+    toast('Прогресс загружен');
+    route();
+  } catch (err) { toast('Это не файл прогресса. Выберите файл progress-….json'); }
+});
+
+/* ===== События ===== */
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-action], [data-front]');
+  if (!el) return;
+  if (el.dataset.front) {
+    store.settings.front = el.dataset.front; saveStore();
+    el.parentElement.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b === el)));
+    return;
+  }
+  const t = app.dataset.topic && DATA && DATA.topicsByKey[app.dataset.topic];
+  switch (el.dataset.action) {
+    case 'reload': location.reload(); break;
+    case 'clear-search': searchQuery = ''; document.getElementById('q').value = ''; updateSearch(); document.getElementById('q').focus(); break;
+    case 'toggle-all': {
+      const st = topicState[t.key]; const all = t.subs.every(s => st.sel.has(s.name));
+      st.sel = new Set(all ? [] : t.subs.map(s => s.name));
+      app.querySelectorAll('input[data-sub]').forEach(i => { i.checked = !all; });
+      updateTopicControls(t); break;
+    }
+    case 'start': if (t) startSession(t, pickCards(t)); break;
+    case 'flip': flip(); break;
+    case 'known': rate('known'); break;
+    case 'repeat': rate('repeat'); break;
+    case 'finish': finishSession(); break;
+    case 'again-repeat': { const tt = DATA.topicsByKey[session.topicKey]; startSession(tt, session.repeat); break; }
+    case 'export': exportProgress(); break;
+    case 'import': document.getElementById('import-file').click(); break;
+    case 'reset':
+      if (confirm('Сбросить весь прогресс в этом браузере? Отменить это будет нельзя.')) { store.cards = {}; store.last = null; saveStore(); openModule = null; toast('Прогресс сброшен'); route(); }
+      break;
+  }
+});
+document.addEventListener('change', e => {
+  const el = e.target;
+  const t = app.dataset.topic && DATA && DATA.topicsByKey[app.dataset.topic];
+  if (el.matches('input[data-sub]') && t) {
+    const name = t.subs[+el.dataset.sub].name, st = topicState[t.key];
+    if (el.checked) st.sel.add(name); else st.sel.delete(name);
+    updateTopicControls(t);
+  } else if (el.matches('input[data-setting]')) {
+    store.settings[el.dataset.setting] = el.checked; saveStore();
+    if (t) updateTopicControls(t);
+  }
+});
+document.addEventListener('keydown', e => {
+  if (document.body.dataset.screen !== 'study' || !session || session.finished) return;
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  const tag = e.target.tagName;
+  if (e.key === ' ' || e.key === 'Enter') {
+    if (tag === 'BUTTON' || tag === 'A' || tag === 'INPUT') return;
+    e.preventDefault(); flip();
+  } else if (e.key === 'ArrowRight') { e.preventDefault(); rate('known'); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); rate('repeat'); }
+});
+
+route();
+loadData();
+</script>
+</body>
+</html>
